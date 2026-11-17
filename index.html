@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>挂一碗面 · 墙上先挂多少碗，这个月才不断</title>
+<meta name="description" content="店里开「挂一碗」：有人先付钱挂在墙上，有需要的人来了直接领一碗。每天来挂、来领的人数不一样，算这段日子会不会哪天被领空、开张要先挂多少碗、每天要几个人来挂才稳。">
+<style>
+  :root{--bg:#f4efe6;--paper:#fffdf8;--card:#faf6ee;--ink:#2a2420;--ink2:#5a4f46;--mut:#8a7e72;--line:#e2d8c8;--rule:#eee6d8;--red:#b5402f;--ok:#2f7a55;--key:#8a4b12;--hi:#fff1d6;--slip:#fff8e8;--slip2:#f0dfbf}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:22px 14px 72px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 6px;letter-spacing:.06em}
+  .sub{color:var(--ink2);margin:0;font-size:15.5px}
+  .muted{color:var(--mut);font-size:13.5px}
+  .hide{display:none !important}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .chip{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13.5px;color:var(--ink2)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin:14px 0;min-width:0}
+  .h2{font-size:15px;font-weight:700;margin:0 0 10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .err{background:#fbeceb;border:1px solid #e3b1aa;border-radius:6px;padding:10px 14px;color:var(--red);margin:10px 0}
+  .err ul{margin:4px 0 0;padding-left:20px}
+  .bad{border-color:var(--red) !important;background:#fbeceb !important}
+  /* 挂单式输入：每一项是一张小票 */
+  .slips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .slip{background:var(--slip);border:1px dashed #d6c39e;border-radius:4px;padding:8px 10px 10px;position:relative;min-width:0}
+  .slip:before{content:"";position:absolute;top:-5px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#c9a56a;box-shadow:0 1px 0 #8f7040}
+  .slip label{display:block;font-size:12.5px;color:var(--ink2);line-height:1.35;margin-bottom:4px}
+  .slip input{width:100%;border:1px solid var(--line);border-radius:4px;background:#fff;padding:5px 8px;font-size:17px;font-variant-numeric:tabular-nums}
+  .slip.wide{grid-column:span 2}
+  .slip small{display:block;color:var(--mut);font-size:11.5px;line-height:1.3;margin-top:3px}
+  .tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:2px 0 12px}
+  .tot div{border:1px solid var(--rule);background:var(--card);border-radius:6px;padding:7px 11px;min-width:0}
+  .tot span{display:block;font-size:12.5px;color:var(--mut)}
+  .tot b{font-size:28px;font-variant-numeric:tabular-nums;line-height:1.25;overflow-wrap:anywhere}
+  .tot b.lg{font-size:20px}
+  .tot div.key{background:var(--hi);border-color:#ecd29a} .tot div.key b{color:var(--key)}
+  .tot b.neg{color:var(--red)} .tot b.pos{color:var(--ok)}
+  .tot small{display:block;color:var(--mut);font-size:12px;line-height:1.35}
+  .head{font-size:21px;font-weight:800;line-height:1.45;margin:0 0 6px;overflow-wrap:anywhere}
+  .why{color:var(--ink2);margin:0 0 8px;font-size:15px;overflow-wrap:anywhere}
+  .verdict{background:#f1f6ef;border-left:3px solid var(--ok);padding:6px 10px;font-size:14.5px;color:#245c40;margin:6px 0;overflow-wrap:anywhere}
+  .acts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px}
+  .act{background:#fff;border:1px solid #d9c49c;color:var(--key);border-radius:6px;padding:6px 10px;font-size:14px;text-align:left;max-width:100%;overflow-wrap:anywhere}
+  .act:hover{background:var(--hi)}
+  /* 墙：开张挂的碗 */
+  .wall{display:flex;flex-wrap:wrap;gap:3px;background:#efe3cc;border:1px solid #e0cfae;border-radius:6px;padding:10px;min-height:48px}
+  .wall i{display:block;width:14px;height:18px;background:var(--slip);border:1px solid #d3bb8c;border-radius:2px;position:relative}
+  .wall i:after{content:"";position:absolute;left:3px;right:3px;top:7px;height:2px;background:#d8c39a}
+  .wall i.x{background:#e7dcc8;border-style:dashed;opacity:.6}
+  .wall em{font-style:normal;color:var(--ink2);font-size:13px;align-self:center;margin-left:6px}
+  /* 日历条：每天一格 */
+  .cal{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+  .cal button{border:1px solid var(--line);border-radius:4px;padding:3px 2px 4px;background:#fff;min-width:0;text-align:center;line-height:1.2}
+  .cal button b{display:block;font-size:12px;color:var(--ink2);font-weight:600}
+  .cal button span{display:block;font-size:11.5px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal button.sel{outline:2px solid var(--key);outline-offset:1px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--mut);margin:6px 0 0}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:4px;border:1px solid #ddd}
+  .dayText{margin:8px 0 0;font-size:14.5px;color:var(--ink2);overflow-wrap:anywhere}
+  svg.ch{width:100%;height:auto;display:block}
+  .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{border-bottom:1px solid var(--rule);padding:6px 6px;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--mut);font-weight:600;font-size:12.5px}
+  tr.cur td{background:var(--hi);font-weight:700}
+  .tbl{overflow-x:auto}
+  .tbl td:not(:first-child),.tbl th:not(:first-child){white-space:nowrap}
+  .tbl table{min-width:480px}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:7px 13px;font-size:14px}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  details{margin-top:8px} summary{cursor:pointer;color:var(--ink2);font-size:14.5px}
+  details p, details li{font-size:14px;color:var(--ink2)}
+  @media (max-width:720px){
+    .slips{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .two{grid-template-columns:minmax(0,1fr)}
+    .tot{grid-template-columns:minmax(0,1fr)}
+    .tot b{font-size:24px}
+    .cal{grid-template-columns:repeat(6,minmax(0,1fr))}
+    h1{font-size:28px}
+    .head{font-size:19px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>挂一碗面</h1>
+  <p class="sub">店里开「挂一碗」：有人先付钱挂在墙上，有需要的人来了直接领一碗。每天来挂、来领的人数都不一样——这段日子里会不会哪天被领空、有人空手回去？开张要先挂多少碗才稳？</p>
+  <div class="chips" id="presets"></div>
+  <p class="muted" id="presetNote"></p>
+
+  <section class="panel" aria-label="设定">
+    <div class="h2">墙上的设定 <span class="muted" id="saveTag"></span></div>
+    <div class="slips">
+      <div class="slip wide"><label for="place">店名 / 地方</label><input id="place" maxlength="30"></div>
+      <div class="slip"><label for="price">一碗多少钱（元）</label><input id="price" inputmode="decimal"></div>
+      <div class="slip"><label for="s0">开张墙上先挂几碗</label><input id="s0" inputmode="numeric"></div>
+      <div class="slip"><label for="take">每天平均几个人来领</label><input id="take" inputmode="decimal"><small>一人领一碗</small></div>
+      <div class="slip"><label for="give">每天平均挂进几碗</label><input id="give" inputmode="decimal"><small>当天挂的当天能领</small></div>
+      <div class="slip"><label for="days">算几天</label><input id="days" inputmode="numeric"><small>1–60 天</small></div>
+      <div class="slip"><label for="cap">每天最多送几碗</label><input id="cap" inputmode="numeric"><small>0 = 不限</small></div>
+      <div class="slip"><label for="q">想要几成把握（%）</label><input id="q" inputmode="decimal"><small>50–99.9</small></div>
+    </div>
+  </section>
+
+  <div id="errBox" class="err hide"></div>
+
+  <section class="panel" id="okBox" aria-label="结论">
+    <div class="tot" id="tot"></div>
+    <p class="head" id="headline"></p>
+    <p class="why" id="why"></p>
+    <p class="verdict" id="verdict"></p>
+    <div class="acts" id="acts"></div>
+  </section>
+
+  <section class="panel" id="wallPanel" aria-label="墙和日历">
+    <div class="h2">墙上挂着的 <span class="muted" id="wallNote"></span></div>
+    <div class="wall" id="wall"></div>
+    <div class="h2" style="margin-top:16px">一天一格：这天断碗的把握 <span class="muted">点一格看这一天</span></div>
+    <div class="cal" id="cal"></div>
+    <div class="legend"><span><i style="background:#fff"></i>不到 1%</span><span><i style="background:#f8dcc2"></i>1%–10%</span><span><i style="background:#ecaa86"></i>10%–30%</span><span><i style="background:#cf6a4c"></i>30% 以上</span></div>
+    <p class="dayText" id="dayText"></p>
+  </section>
+
+  <section class="panel" id="chartPanel" aria-label="曲线与对照">
+    <div class="two">
+      <div><div class="h2">到这天为止还从没断过</div><svg class="ch" id="chNone" role="img" aria-label="到每一天为止还没断过的把握"></svg></div>
+      <div><div class="h2">每天结束墙上平均剩几碗</div><svg class="ch" id="chLeft" role="img" aria-label="每天结束墙上平均剩几碗"></svg></div>
+    </div>
+    <div class="h2" style="margin-top:14px">几种做法对照</div>
+    <div class="tbl"><table id="cmp"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="bar">
+      <button class="btn" id="dlPng" type="button">下载结果卡 PNG</button>
+      <button class="btn ghost" id="dlCsv" type="button">逐天明细 CSV</button>
+      <button class="btn ghost" id="dlMd" type="button">Markdown</button>
+      <button class="btn ghost" id="dlJson" type="button">备份 JSON</button>
+      <button class="btn ghost" id="impJson" type="button">导入备份</button>
+      <input type="file" id="impFile" accept=".json,application/json" class="hide">
+      <button class="btn ghost" id="reset" type="button">回到默认</button>
+    </div>
+    <details>
+      <summary>怎么算的、算不了什么</summary>
+      <ul>
+        <li>每天来挂的碗数、来领的人数各按泊松分布（只用你填的平均数），天与天之间互不影响。当天挂的当天就能领。</li>
+        <li>按「墙上剩几碗」的概率一天天精确推下去，不是随机模拟；「断碗」= 这天有人来领、墙上的碗却不够，有人空手回去。设了每天上限时，被上限挡回去的单独算，不算断碗。</li>
+        <li>「开张至少要挂几碗」「每天平均要挂进几碗」是逐档试出来的最小值（碗数一碗一档、挂进的平均数 0.1 一档）。</li>
+        <li>没算进去的：节假日、天气、周几的高低峰，同一个人反复来领，挂的人看到墙空了会多挂，店家自己补碗。真实店里的人数通常比泊松更忽高忽低，所以这里的把握偏乐观。</li>
+        <li>默认的面馆和全部数字都是虚构示例，不是对哪家真实店铺的描述或预测。</li>
+      </ul>
+    </details>
+  </section>
+  <p class="muted">全部在你的浏览器里算，不联网；设定自动存在本机。</p>
+</div>
+<script src="./core.js"></script>
+<script src="./ui.js"></script>
+</body>
+</html>
